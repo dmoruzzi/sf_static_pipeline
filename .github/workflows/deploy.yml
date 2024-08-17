@@ -176,7 +176,7 @@ jobs:
             exit 1
           fi
       
-          sf org login sfdx-url --sfdx-url-file "${auth_secrets[$target_env]}" --set-default --alias "$target_env"
+          sf org login sfdx-url --sfdx-url-stdin "${auth_secrets[$target_env]}" --set-default --alias "$target_env"
         shell: bash
 
       - name: Check Resource Deployability
