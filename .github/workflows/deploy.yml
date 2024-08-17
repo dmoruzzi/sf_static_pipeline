@@ -136,24 +136,24 @@ jobs:
         id: extract_target_file
         if: steps.make_static_resource_folder.outcome == 'success'
         run: |
-          tar -xzf ${{ github.event.inputs.target_environment }}.zip -C $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }
+          tar -xzf ${{ github.event.inputs.target_environment }}.zip -C $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}
         shell: bash
 
       - name: Handle custom target application file metadata
         if: steps.extract_target_file.outcome == 'success'
         run: |
-          if [ -f "$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }/_METADATA" ]; then
-            mv $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }/_METADATA /tmp/METADATA
+          if [ -f "$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}/_METADATA" ]; then
+            mv $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}/_METADATA /tmp/METADATA
             DESCRIPTION=$(grep -oP '<description>\K.*(?=</description>)' /tmp/METADATA)
           fi
 
           if [ -z "$DESCRIPTION" ]; then
-            DESCRIPTION="${ env.RESOURCE_NAME } - $(date +'%Y-%m-%d')"
+            DESCRIPTION="${{ env.RESOURCE_NAME }} - $(date +'%Y-%m-%d')"
           fi
 
-          echo "The ${ env.RESOURCE_NAME } resource description is: ${ DESCRIPTION }"
+          echo "The ${{ env.RESOURCE_NAME }} resource description is: ${ DESCRIPTION }"
 
-          cat <<EOF > $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }.resource-meta.xml
+          cat <<EOF > $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}.resource-meta.xml
           <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
             <cacheControl>Public</cacheControl>
             <contentType>application/x-zip-compressed</contentType>
