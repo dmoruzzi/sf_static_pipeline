@@ -175,8 +175,8 @@ jobs:
             echo "::error::Invalid target environment: $target_env"
             exit 1
           fi
-      
-          sf org login sfdx-url --sfdx-url-stdin "${auth_secrets[$target_env]}" --set-default --alias "$target_env"
+
+          echo "${auth_secrets[$target_env]}" | sf org login sfdx-url --sfdx-url-stdin --set-default --alias "$target_env"
         shell: bash
 
       - name: Check Resource Deployability
