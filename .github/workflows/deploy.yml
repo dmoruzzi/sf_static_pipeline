@@ -13,31 +13,6 @@ on:
           - 'training'
 
 jobs:
-  clean-cache:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Clean old caches
-        run: |
-          CURRENT_MONTH=$(date +'%Y-%m')
-          SEARCH_STRING="-sf-cli-"
-
-          caches=$(gh api /repos/${{ github.repository }}/actions/caches --jq '.caches[] | select(.key | contains("'"$SEARCH_STRING"'")) | select(.key | contains("'"$CURRENT_MONTH"'") | not) | .id')
-
-          if [ -z "$caches" || "$caches" == "null" ]; then
-            echo "No old caches found"
-            exit 0
-          fi
-
-          for cache_id in $caches; do
-            echo "Deleting cache with ID $cache_id"
-            gh api -X DELETE /repos/${{ github.repository }}/actions/caches/$cache_id
-          done
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   deploy:
     runs-on: ubuntu-latest
     permissions:
@@ -159,7 +134,7 @@ jobs:
 
       - name: Authenticate to Salesforce
         id: sf_authenticate
-        if: steps.add_sf_to_path.outcome == 'success'
+        if: steps.add_sf_to_path.outcome == 'failure'
         env:
           AUTH_INT: ${{ secrets.AUTH_INT }}
           AUTH_QA: ${{ secrets.AUTH_QA }}
