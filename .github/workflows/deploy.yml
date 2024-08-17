@@ -57,7 +57,7 @@ jobs:
             ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-
 
       - name: Install Salesforce CLI
-        if: steps.cache-sf-cli.outputs.cache-hit == 'false'
+        if: steps.cache-sf-cli.outputs.cache-hit != 'true'
         run: |
           echo "Starting installation of Salesforce CLI..."
           
