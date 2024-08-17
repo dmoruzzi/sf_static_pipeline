@@ -52,9 +52,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ github.workspace }}/sf-cli
-          key: ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}
+          key: ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-${{ hashFiles('sf-cli/sf/bin/sf') }}
           restore-keys: |
-            ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}
+            ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-
 
       - name: Install Salesforce CLI
         if: steps.cache-sf-cli.outputs.cache-hit != 'true'
@@ -74,6 +74,13 @@ jobs:
             exit 1
           fi
         shell: bash
+
+      - name: Save Salesforce CLI to cache
+        if: steps.cache-sf-cli.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: ${{ github.workspace }}/sf-cli
+          key: ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-${{ hashFiles('sf-cli/sf/bin/sf') }}
 
       - name: Add Salesforce CLI to PATH
         run: |
