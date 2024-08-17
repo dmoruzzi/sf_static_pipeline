@@ -49,7 +49,7 @@ jobs:
 
       - name: Cache Salesforce CLI
         id: cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/sf-cli
           key: ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-${{ hashFiles('sf-cli/sf/bin/sf') }}
@@ -156,9 +156,9 @@ jobs:
         shell: bash
 
       - name: Authenticate to Salesforce
+        id: sf_authenticate
         if: steps.add_sf_to_path.outcome == 'success'
         env:
-          # Export the secrets as environment variables for use in the script.
           AUTH_INT: ${{ secrets.AUTH_INT }}
           AUTH_QA: ${{ secrets.AUTH_QA }}
           AUTH_TRAINING: ${{ secrets.AUTH_TRAINING }}
@@ -178,3 +178,38 @@ jobs:
       
           sf org login sfdx-url --sfdx-url-file "${auth_secrets[$target_env]}" --set-default --alias "$target_env"
         shell: bash
+
+      - name: Check Resource Deployability
+        id: check_resource_deployability
+        if: steps.sf_authenticate.outcome == 'success'
+        run: |
+          sf project deploy start --dry-run --manifest-dir $GITHUB_WORKSPACE/salesforce/manifest/package.xml --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment_check.log || true
+        shell: bash
+
+      - name: Display Deployment Check Log
+        id: display_deployment_check_log
+        if: steps.check_resource_deployability.outcome == 'success'
+        run: |
+          # if component failure in log, then print the log and exit
+          if grep -q "Component failure" $GITHUB_WORKSPACE/deployment_check.log; then
+            cat $GITHUB_WORKSPACE/deployment_check.log
+            echo "::error::Deployment check failed."
+            exit 1
+          fi
+        shell: bash
+
+      - name: Deploy Static Resource
+        id: deploy_resource
+        if: steps.display_deployment_check_log.outcome == 'success'
+        run: |
+          sf project deploy start --manifest-dir $GITHUB_WORKSPACE/salesforce/manifest/package.xml --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment.log || true
+        shell: bash
+
+      - name: Upload Deployment Log
+        id: upload_deployment_log
+        uses: actions/upload-artifact@v4
+        if: steps.deploy_resource.outcome == 'success'
+        with:
+          name: deployment_log
+          path: $GITHUB_WORKSPACE/deployment.log
+          retention-days: 7
