@@ -148,8 +148,16 @@ jobs:
               --repo ${{ github.event.repository.full_name }} \
               --label "bug" \
               --assignee ${{ github.event.user.login }}
-              --body $'Hi @${{ github.event.user.login }},\n\nWhen evaluating if the ${{ env.STATIC_RESOURCE_DIR }} directory exists after its creation, the test case failed. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue. It may be related to a new permission security policy for GitHub Actions. For more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\nThanks!'
-            
+              --body "$(cat <<EOF
+          Hi @${{ github.event.user.login }},
+          
+          When evaluating if the ${{ env.STATIC_RESOURCE_DIR }} directory exists after its creation, the test case failed. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue. It may be related to a new permission security policy for GitHub Actions.
+          
+          For more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+          
+          Thanks!
+          EOF
+              )"
             exit 1
           fi
         shell: bash
@@ -211,7 +219,16 @@ jobs:
               --repo ${{ github.event.repository.full_name }} \
               --label "bug" \
               --assignee ${{ github.event.user.login }} \
-              --body $'Hi @${{ github.event.user.login }},\n\nThe target environment $target_env does not exist in the authentication secrets. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue.\n\nFor more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\nThanks!'
+              --body "$(cat <<EOF
+          Hi @${{ github.event.user.login }},
+
+          The target environment \${{ target_env }} does not exist in the authentication secrets. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue.
+
+          For more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+          Thanks!
+          EOF
+              )"
             
             exit 1
           fi
@@ -241,8 +258,18 @@ jobs:
               --repo ${{ github.event.repository.full_name }} \
               --label "wontfix" \
               --assignee ${{ github.event.user.login }} \
-              --body $'Hi @${{ github.event.user.login }},\n\nThe deployment check has failed due to a component failure. The failure was detected in the deployment check log. Please review the log output above for more details. This issue is likely related to a development error and does not indicate a problem with the deployment pipeline; please inspect the deployment check log for more details.  If it is not related to the component itself, please notify the repository maintainer about this issue as then it may indicate a problem with the deployment pipeline.\n\nFor more information, you can view the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\nThanks!'
-            
+              --body "$(cat <<EOF
+          Hi @${{ github.event.user.login }},
+          
+          The deployment check has failed due to a component failure. This failure was detected in the deployment check log. Please review the log output above for more details.
+          
+          This issue is likely related to a development error and does not indicate a problem with the deployment pipeline. However, if you find that it is not related to the component itself, please notify the repository maintainer, as it may then indicate a problem with the deployment pipeline.
+          
+          For more information, you can view the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+          
+          Thanks!
+          EOF
+              )"            
             exit 1
           fi
         shell: bash
