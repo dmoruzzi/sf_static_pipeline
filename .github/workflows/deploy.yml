@@ -67,10 +67,11 @@ jobs:
       - name: Add Salesforce CLI to PATH
         id: add_sf_to_path
         run: |
-          if [ -f "${GITHUB_WORKSPACE}/sf-cli/sf/bin/sf" ]; then
+          if [ -f "${GITHUB_WORKSPACE}/sf-cli/sf/bin/sfb" ]; then
             echo "Salesforce CLI installed successfully in ${GITHUB_WORKSPACE}/sf-cli."
           else
             echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
+            gh issue create --title "Salesforce CLI installation failed or directory structure is incorrect." --label "bug" --body "@${{ github.event.sender.login }} please notify the maintainer of this repository that the Salesforce CLI installation failed or directory structure is incorrect. This failed when evaluating: $GITHUB_WORKSPACE/sf-cli/sf/bin/sf which means that forcedotcom/salesforce-cli changed the structure of the installation; the maintainer will need to fix it. Re-executing this job will not resolve this issue. [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             exit 1
           fi
 
@@ -84,12 +85,12 @@ jobs:
         shell: bash
 
       - name: Generate placeholder Salesforce project
+        # This is needed as you may only execute project deployments from within a SF directory.
+        # This approach of using a placeholder project rather than the actual repository
+        # saves approximately 3 minutes of execution cost time thereby saving money.
         id: generate_sf_project
         if: steps.verify_target_file.outcome == 'success'
         run: |
-          # This is needed as you may only execute project deployments from within a SF directory.
-          # This approach of using a placeholder project rather than the actual repository
-          # saves approximately 3 minutes of execution cost time thereby saving money.
           sf project generate --name salesforce --template empty --output-dir $GITHUB_WORKSPACE
         shell: bash
 
