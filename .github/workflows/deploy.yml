@@ -148,7 +148,7 @@ jobs:
           fi
 
           if [ -z "$DESCRIPTION" ]; then
-            DESCRIPTION="${{ env.RESOURCE_NAME }} - $(date +'%Y-%m-%d')"
+            DESCRIPTION="${ env.RESOURCE_NAME } - $(date +'%Y-%m-%d')"
           fi
 
           cat <<EOF > $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }.resource-meta.xml
