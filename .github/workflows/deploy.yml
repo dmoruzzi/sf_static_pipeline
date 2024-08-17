@@ -170,6 +170,7 @@ jobs:
         id: sf_authenticate
         if: steps.add_sf_to_path.outcome == 'success'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTH_INT: ${{ secrets.AUTH_INT }}
           AUTH_QA: ${{ secrets.AUTH_QA }}
           AUTH_TRAINING: ${{ secrets.AUTH_TRAINING }}
@@ -197,8 +198,6 @@ jobs:
 
           echo "${auth_secrets[$target_env]}" | sf org login sfdx-url --sfdx-url-stdin --set-default --alias "$target_env"
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check Resource Deployability
         id: check_resource_deployability
