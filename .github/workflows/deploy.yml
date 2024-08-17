@@ -57,7 +57,7 @@ jobs:
             ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-
 
       - name: Install Salesforce CLI
-        if: steps.cache-sf-cli.outputs.cache-hit != 'true'
+        if: steps.cache-sf-cli.outputs.cache-hit == 'false'
         run: |
           echo "Starting installation of Salesforce CLI..."
           
@@ -76,7 +76,7 @@ jobs:
         shell: bash
 
       - name: Save Salesforce CLI to cache
-        if: steps.cache-sf-cli.outputs.cache-hit != 'true'
+        if: steps.cache-sf-cli.outputs.cache-hit == 'false'
         uses: actions/cache/save@v3
         with:
           path: ${{ github.workspace }}/sf-cli
