@@ -136,7 +136,7 @@ jobs:
         id: extract_target_file
         if: steps.make_static_resource_folder.outcome == 'success'
         run: |
-          tar -xzf ${{ github.event.inputs.target_environment }}.zip -C $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}
+          tar -xzf $GITHUB_WORKSPACE/app/${{ github.event.inputs.target_environment }}.zip -C $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}
         shell: bash
 
       - name: Handle custom target application file metadata
