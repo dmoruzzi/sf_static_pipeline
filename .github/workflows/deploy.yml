@@ -42,7 +42,7 @@ jobs:
         if: steps.validate.outcome == 'success'
         run: |
           echo "Installing Salesforce CLI..."
-
+          
           # Define directory for Salesforce CLI
           CLI_DIR="${GITHUB_WORKSPACE}/sf-cli"
           mkdir -p $CLI_DIR
@@ -50,6 +50,18 @@ jobs:
           # Download and extract Salesforce CLI
           CLI_URL="https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz"
           curl -L $CLI_URL | tar -xJf - -C $CLI_DIR
+
+          # Debug: List directory contents
+          echo "Directory contents after extraction:"
+          ls -l $CLI_DIR
+
+          # Check if the 'sf' binary is actually present
+          if [ -f "$CLI_DIR/sf" ]; then
+            echo "Salesforce CLI installed successfully."
+          else
+            echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
+            exit 1
+          fi
 
           # Add CLI directory to PATH
           export PATH="$CLI_DIR:$PATH"
@@ -63,5 +75,4 @@ jobs:
         run: |
           # Use the Salesforce CLI
           sf --version
-          # Add more commands as needed
         shell: bash
