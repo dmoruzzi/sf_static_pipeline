@@ -99,30 +99,9 @@ jobs:
           sf project generate --name salesforce --template empty --output-dir $GITHUB_WORKSPACE
         shell: bash
 
-      - name: Generate the deployment package manifest
-        id: generate_manifest_file
-        if: steps.generate_sf_project.outcome == 'success'
-        run: |
-          mkdir -p $GITHUB_WORKSPACE/salesforce/manifest
-          cat <<EOF > $GITHUB_WORKSPACE/salesforce/manifest/package.xml
-          <Package xmlns="http://soap.sforce.com/2006/04/metadata">
-            <types>
-              <members>${{ env.RESOURCE_NAME }}</members>
-              <name>StaticResource</name>
-            </types>
-            <version>59.0</version>
-          </Package>
-          EOF
-
-          if [ ! -f "$GITHUB_WORKSPACE/salesforce/manifest/package.xml" ]; then
-            echo "::error file=$GITHUB_WORKSPACE/salesforce/manifest/package.xml::Error: The manifest file does not exist."
-            exit 1
-          fi
-        shell: bash
-
       - name: Make Static Resource Folder Structure
         id: make_static_resource_folder
-        if: steps.generate_manifest_file.outcome == 'success'
+        if: steps.generate_sf_project.outcome == 'success'
         run: |
           mkdir -p ${{ env.STATIC_RESOURCE_DIR }}
 
@@ -130,9 +109,6 @@ jobs:
             echo "::error directory=${{ env.STATIC_RESOURCE_DIR }}::staticresources::Error: The static resource folder does not exist."
             exit 1
           fi
-
-          # temp debug:
-          cat $GITHUB_WORKSPACE/salesforce/manifest/package.xml
         shell: bash
 
       - name: Extract target application file
@@ -151,7 +127,7 @@ jobs:
           fi
 
           if [ -z "$DESCRIPTION" ]; then
-            DESCRIPTION="${{ env.RESOURCE_NAME }} - $(date +'%Y-%m-%d')"
+            DESCRIPTION="${{ env.RESOURCE_NAME }} - $(date +'%Y-%m-%d') - ${{ github.run_id }}"
           fi
 
           echo "The ${{ env.RESOURCE_NAME }} resource description is: $DESCRIPTION"
@@ -214,7 +190,7 @@ jobs:
         if: steps.display_deployment_check_log.outcome == 'success'
         run: |
           cd $GITHUB_WORKSPACE/salesforce
-          sf project deploy start --manifest $GITHUB_WORKSPACE/salesforce/manifest/package.xml --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment.log || true
+          sf project deploy start --source-dir ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }} --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment.log || true
         shell: bash
 
       - name: Upload Deployment Log
@@ -223,5 +199,6 @@ jobs:
         if: steps.deploy_resource.outcome == 'success'
         with:
           name: deployment_log
-          path: $GITHUB_WORKSPACE/deployment.log
+          path: deployment.log
           retention-days: 7
+
