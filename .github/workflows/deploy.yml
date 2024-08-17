@@ -19,9 +19,11 @@ jobs:
       contents: read
 
     steps:
-      - name: Set Resource Name
+      - name: Set Job Variables
         run: |
           echo "RESOURCE_NAME=MyStaticResource" >> $GITHUB_ENV
+          echo "SALESFORCE_CLI_DOWNLOAD_URL=https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz" >> $GITHUB_ENV
+          mkdir -p $GITHUB_WORKSPACE/sf-cli
         shell: bash
 
       - name: Checkout the main branch
@@ -58,22 +60,21 @@ jobs:
 
       - name: Install Salesforce CLI
         if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          echo "Starting installation of Salesforce CLI..."
+        run: curl -L $SALESFORCE_CLI_DOWNLOAD_URL | tar -xJf - -C $GITHUB_WORKSPACE/sf-cli
+        #   echo "Starting installation of Salesforce CLI..."
           
-          SALESFORCE_CLI_INSTALL_DIR="${GITHUB_WORKSPACE}/sf-cli"
-          mkdir -p $SALESFORCE_CLI_INSTALL_DIR
+        #   SALESFORCE_CLI_INSTALL_DIR="${GITHUB_WORKSPACE}/sf-cli"
+        #   mkdir -p $SALESFORCE_CLI_INSTALL_DIR
 
-          SALESFORCE_CLI_DOWNLOAD_URL="https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz"
-          curl -L $SALESFORCE_CLI_DOWNLOAD_URL | tar -xJf - -C $SALESFORCE_CLI_INSTALL_DIR
+        #   curl -L $SALESFORCE_CLI_DOWNLOAD_URL | tar -xJf - -C $SALESFORCE_CLI_INSTALL_DIR
 
-          if [ -f "$SALESFORCE_CLI_INSTALL_DIR/sf/bin/sf" ]; then
-            echo "Salesforce CLI installed successfully in $SALESFORCE_CLI_INSTALL_DIR."
-          else
-            echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
-            exit 1
-          fi
-        shell: bash
+        #   if [ -f "$SALESFORCE_CLI_INSTALL_DIR/sf/bin/sf" ]; then
+        #     echo "Salesforce CLI installed successfully in $SALESFORCE_CLI_INSTALL_DIR."
+        #   else
+        #     echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
+        #     exit 1
+        #   fi
+        # shell: bash
 
       - name: Add Salesforce CLI to PATH
         run: |
