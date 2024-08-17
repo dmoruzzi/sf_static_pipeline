@@ -78,9 +78,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/sf-cli
-          key: ${{ runner.os }}-sf-cli-2024-06  # TEMP TO TEST CACHE DELETION
+          key: ${{ runner.os }}-sf-cli-2024-07  # TEMP TO TEST CACHE DELETION
           restore-keys: |
-            ${{ runner.os }}-sf-cli-2024-06
+            ${{ runner.os }}-sf-cli-2024-07
 
       - name: Install Salesforce CLI
         if: steps.cache.outputs.cache-hit != 'true'
