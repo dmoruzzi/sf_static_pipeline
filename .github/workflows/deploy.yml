@@ -25,6 +25,7 @@ jobs:
           echo "RESOURCE_NAME=MyStaticResource" >> $GITHUB_ENV
           echo "SALESFORCE_CLI_DOWNLOAD_URL=https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz" >> $GITHUB_ENV
           echo "CURRENT_MONTH=$(date +'%Y-%m')" >> $GITHUB_ENV
+          echo "STATIC_RESOURCE_DIR=$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources" >> $GITHUB_ENV
 
           echo "Creating directories..."
           mkdir -p $GITHUB_WORKSPACE/sf-cli
@@ -123,10 +124,10 @@ jobs:
         id: make_static_resource_folder
         if: steps.generate_manifest_file.outcome == 'success'
         run: |
-          mkdir -p $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources
+          mkdir -p ${{ env.STATIC_RESOURCE_DIR }}
 
-          if [ ! -d "$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources" ]; then
-            echo "::error directory=$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources::Error: The static resource folder does not exist."
+          if [ ! -d "${{ env.STATIC_RESOURCE_DIR }}" ]; then
+            echo "::error directory=${{ env.STATIC_RESOURCE_DIR }}::staticresources::Error: The static resource folder does not exist."
             exit 1
           fi
 
@@ -138,14 +139,14 @@ jobs:
         id: extract_target_file
         if: steps.make_static_resource_folder.outcome == 'success'
         run: |
-          unzip $GITHUB_WORKSPACE/app/${{ github.event.inputs.target_environment }}.zip -d $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}
+          unzip $GITHUB_WORKSPACE/app/${{ github.event.inputs.target_environment }}.zip -d ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}
         shell: bash
 
       - name: Static Resource Description & Metadata
         if: steps.extract_target_file.outcome == 'success'
         run: |
-          if [ -f "$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}/_METADATA" ]; then
-            mv $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}/_METADATA /tmp/METADATA
+          if [ -f "${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}/_METADATA" ]; then
+            mv ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}/_METADATA /tmp/METADATA
             DESCRIPTION=$(grep -oP '<description>\K.*(?=</description>)' /tmp/METADATA)
           fi
 
@@ -155,7 +156,7 @@ jobs:
 
           echo "The ${{ env.RESOURCE_NAME }} resource description is: $DESCRIPTION"
 
-          cat <<EOF > $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}.resource-meta.xml
+          cat <<EOF > ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}.resource-meta.xml
           <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
             <cacheControl>Public</cacheControl>
             <contentType>application/x-zip-compressed</contentType>
@@ -193,7 +194,7 @@ jobs:
         if: steps.sf_authenticate.outcome == 'success'
         run: |
           cd $GITHUB_WORKSPACE/salesforce
-          sf project deploy start --dry-run --manifest $GITHUB_WORKSPACE/salesforce/manifest/package.xml --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment_check.log || true
+          sf project deploy start --dry-run --source-dir ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }} --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment_check.log || true
         shell: bash
 
       - name: Display Deployment Check Log
