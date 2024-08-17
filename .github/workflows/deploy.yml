@@ -48,7 +48,7 @@ jobs:
           fi
         shell: bash
 
-      - name: Cache Salesforce CLI (PULL)
+      - name: Cache Salesforce CLI
         id: cache
         uses: actions/cache@v4
         with:
@@ -58,10 +58,8 @@ jobs:
             ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-
 
       - name: Install Salesforce CLI
-        id: install_sf_cli
         if: steps.cache.outputs.cache-hit != 'true'
         run: curl -L $SALESFORCE_CLI_DOWNLOAD_URL | tar -xJf - -C $GITHUB_WORKSPACE/sf-cli
-        shell: bash
 
       - name: Add Salesforce CLI to PATH
         id: add_sf_to_path
