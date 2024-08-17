@@ -192,7 +192,7 @@ jobs:
         id: check_resource_deployability
         if: steps.sf_authenticate.outcome == 'success'
         run: |
-          sf project deploy start --dry-run --manifest-dir $GITHUB_WORKSPACE/salesforce/manifest/package.xml --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment_check.log || true
+          sf project deploy start --dry-run --manifest $GITHUB_WORKSPACE/salesforce/manifest/package.xml --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment_check.log || true
         shell: bash
 
       - name: Display Deployment Check Log
@@ -211,7 +211,7 @@ jobs:
         id: deploy_resource
         if: steps.display_deployment_check_log.outcome == 'success'
         run: |
-          sf project deploy start --manifest-dir $GITHUB_WORKSPACE/salesforce/manifest/package.xml --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment.log || true
+          sf project deploy start --manifest $GITHUB_WORKSPACE/salesforce/manifest/package.xml --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment.log || true
         shell: bash
 
       - name: Upload Deployment Log
