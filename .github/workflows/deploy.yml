@@ -53,9 +53,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/sf-cli
-          key: ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-${{ hashFiles('sf-cli/sf/bin/sf') }}
+          key: ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}
           restore-keys: |
-            ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-
+            ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}
 
       - name: Install Salesforce CLI
         if: steps.cache.outputs.cache-hit != 'true'
