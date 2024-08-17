@@ -77,6 +77,8 @@ jobs:
 
           echo "$GITHUB_WORKSPACE/sf-cli/sf/bin" >> $GITHUB_PATH
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Display Salesforce CLI version
         if: steps.verify_target_file.outcome == 'success'
