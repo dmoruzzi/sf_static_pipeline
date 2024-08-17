@@ -19,10 +19,14 @@ jobs:
       contents: read
 
     steps:
-      - name: Set Job Variables
+      - name: Prepare job variables & structure
         run: |
+          echo "Setting job variables..."
           echo "RESOURCE_NAME=MyStaticResource" >> $GITHUB_ENV
           echo "SALESFORCE_CLI_DOWNLOAD_URL=https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz" >> $GITHUB_ENV
+          echo "CURRENT_MONTH=$(date +'%Y-%m')" >> $GITHUB_ENV
+
+          echo "Creating directories..."
           mkdir -p $GITHUB_WORKSPACE/sf-cli
         shell: bash
 
@@ -43,12 +47,6 @@ jobs:
           fi
         shell: bash
 
-      - name: Set Current Month
-        id: current_month
-        run: |
-          echo "CURRENT_MONTH=$(date +'%Y-%m')" >> $GITHUB_ENV
-        shell: bash
-
       - name: Cache Salesforce CLI
         id: cache
         uses: actions/cache@v3
@@ -61,23 +59,17 @@ jobs:
       - name: Install Salesforce CLI
         if: steps.cache.outputs.cache-hit != 'true'
         run: curl -L $SALESFORCE_CLI_DOWNLOAD_URL | tar -xJf - -C $GITHUB_WORKSPACE/sf-cli
-        #   echo "Starting installation of Salesforce CLI..."
-          
-        #   SALESFORCE_CLI_INSTALL_DIR="${GITHUB_WORKSPACE}/sf-cli"
-        #   mkdir -p $SALESFORCE_CLI_INSTALL_DIR
-
-        #   curl -L $SALESFORCE_CLI_DOWNLOAD_URL | tar -xJf - -C $SALESFORCE_CLI_INSTALL_DIR
-
-        #   if [ -f "$SALESFORCE_CLI_INSTALL_DIR/sf/bin/sf" ]; then
-        #     echo "Salesforce CLI installed successfully in $SALESFORCE_CLI_INSTALL_DIR."
-        #   else
-        #     echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
-        #     exit 1
-        #   fi
-        # shell: bash
 
       - name: Add Salesforce CLI to PATH
+        id: add_sf_to_path
         run: |
+          if [ -f "${GITHUB_WORKSPACE}/sf-cli/sf/bin/sf" ]; then
+            echo "Salesforce CLI installed successfully in ${GITHUB_WORKSPACE}/sf-cli."
+          else
+            echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
+            exit 1
+          fi
+
           echo "$GITHUB_WORKSPACE/sf-cli/sf/bin" >> $GITHUB_PATH
         shell: bash
 
@@ -140,7 +132,7 @@ jobs:
           unzip $GITHUB_WORKSPACE/app/${{ github.event.inputs.target_environment }}.zip -d $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}
         shell: bash
 
-      - name: Handle custom target application file metadata
+      - name: Static Resource Description & Metadata
         if: steps.extract_target_file.outcome == 'success'
         run: |
           if [ -f "$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${{ env.RESOURCE_NAME }}/_METADATA" ]; then
@@ -163,8 +155,26 @@ jobs:
           EOF
         shell: bash
 
-      - name: Debug manifest file
-        if: steps.generate_manifest_file.outcome == 'success'
+      - name: Authenticate to Salesforce
+        if: steps.add_sf_to_path.outcome == 'success'
+        env:
+          # Export the secrets as environment variables for use in the script.
+          AUTH_INT: ${{ secrets.AUTH_INT }}
+          AUTH_QA: ${{ secrets.AUTH_QA }}
+          AUTH_TRAINING: ${{ secrets.AUTH_TRAINING }}
         run: |
-          cat $GITHUB_WORKSPACE/salesforce/manifest/package.xml
+          target_env="${{ github.event.inputs.target_environment }}"
+
+          declare -A auth_secrets=(
+            [int]=$AUTH_INT
+            [qa]=$AUTH_QA
+            [training]=$AUTH_TRAINING
+          )
+      
+          if [[ -z "${auth_secrets[$target_env]}" ]]; then
+            echo "::error::Invalid target environment: $target_env"
+            exit 1
+          fi
+      
+          sf org login sfdx-url --sfdx-url-file "${auth_secrets[$target_env]}" --set-default --alias "$target_env"
         shell: bash
