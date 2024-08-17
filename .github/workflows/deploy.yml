@@ -49,7 +49,7 @@ jobs:
         shell: bash
 
       - name: Cache Salesforce CLI (PULL)
-        id: sf_cli_cache_restore
+        id: cache
         uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}/sf-cli
@@ -59,12 +59,12 @@ jobs:
 
       - name: Install Salesforce CLI
         id: install_sf_cli
-        if: steps.sf_cli_cache_restore.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         run: curl -L $SALESFORCE_CLI_DOWNLOAD_URL | tar -xJf - -C $GITHUB_WORKSPACE/sf-cli
 
       - name: Cache Salesforce CLI (PUSH)
         id: sf_cli_cache_push
-        if: steps.sf_cli_cache_restore.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ github.workspace }}/sf-cli
