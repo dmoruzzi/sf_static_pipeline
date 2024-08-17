@@ -47,19 +47,19 @@ jobs:
             echo "::error file=$TARGET_APP_FILE_PATH::Error: The target application file does not exist."
 
             gh issue create \
-              --title "Error: The target application file does not exist." \
-              --repo ${{ github.event.repository.full_name }} \
-              --label "wontfix" \
-              --assignee ${{ github.event.sender.login }} \
-              "$(cat <<EOF
-            Hi @${{ github.event.sender.login }},
+            --title "Error: The target application file does not exist." \
+            --repo ${{ github.event.repository.full_name }} \
+            --label "wontfix" \
+            --assignee ${{ github.event.sender.login }} \
+            --body "$(cat <<EOF
+          Hi @${{ github.event.sender.login }},
 
-            Error: The target application file does not exist. Please check if the target application file is located in the ${{ github.event.inputs.target_environment }}.zip file at the root of the main branch.
+          Error: The target application file does not exist. Please check if the target application file is located in the ${{ github.event.inputs.target_environment }}.zip file at the root of the main branch.
 
-            This issue is likely related to human error and does not indicate a problem with the deployment pipeline.
+          This issue is likely related to human error and does not indicate a problem with the deployment pipeline.
 
-            Thanks!
-            EOF
+          Thanks!
+          EOF
             )"
 
             1
