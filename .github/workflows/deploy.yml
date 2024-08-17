@@ -77,7 +77,7 @@ jobs:
               --title "Salesforce CLI installation failed or directory structure is incorrect." \
               --repo ${{ github.event.repository.full_name }} \
               --label "bug" \
-              --body "Hi @${{ github.event.sender.login }},\n\nWe encountered an issue with the Salesforce CLI installation or its directory structure.\n\nThe failure occurred when evaluating: $GITHUB_WORKSPACE/sf-cli/sf/bin/sf. It seems that the forcedotcom/salesforce-cli repository has changed its structure, which means the current setup is no longer valid.\n\nPlease inform the repository maintainer about this issue, as re-running the job will not resolve it. For more details, you can check the workflow run here: [Workflow]\(${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\)\n\nThanks!" \
+              --body $'Hi @${{ github.event.sender.login }},\n\nWe encountered an issue with the Salesforce CLI installation or its directory structure.\n\nThe failure occurred when evaluating: $GITHUB_WORKSPACE/sf-cli/sf/bin/sf. It seems that the forcedotcom/salesforce-cli repository has changed its structure, which means the current setup is no longer valid.\n\nPlease inform the repository maintainer about this issue, as re-running the job will not resolve it. For more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\nThanks!' \
               --assignee "${{ github.event.sender.login }}"
             
             exit 1
