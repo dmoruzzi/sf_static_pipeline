@@ -20,7 +20,6 @@ jobs:
     steps:
       - name: Clean old caches
         run: |
-          gh auth login --with-token < ${{ secrets.GITHUB_TOKEN }}
           CURRENT_MONTH=$(date +'%Y-%m')
           SEARCH_STRING="-sf-cli-"
 
