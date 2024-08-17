@@ -87,7 +87,7 @@ jobs:
       - name: Add Salesforce CLI to PATH
         id: add_sf_to_path
         run: |
-          if [ -f "${GITHUB_WORKSPACE}/sf-cli/sf/bin/sfb" ]; then
+          if [ -f "${GITHUB_WORKSPACE}/sf-cli/sf/bin/sf" ]; then
             echo "Salesforce CLI installed successfully in ${GITHUB_WORKSPACE}/sf-cli."
           else
             echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
