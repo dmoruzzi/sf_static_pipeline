@@ -41,7 +41,7 @@ jobs:
           fi
         shell: bash
 
-      - name: Current Month
+      - name: Set Current Month
         id: current_month
         run: |
           echo "CURRENT_MONTH=$(date +'%Y-%m')" >> $GITHUB_ENV
@@ -74,13 +74,6 @@ jobs:
             exit 1
           fi
         shell: bash
-
-      - name: Save Salesforce CLI to cache
-        if: steps.cache-sf-cli.outputs.cache-hit == 'false'
-        uses: actions/cache/save@v3
-        with:
-          path: ${{ github.workspace }}/sf-cli
-          key: ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}-${{ hashFiles('sf-cli/sf/bin/sf') }}
 
       - name: Add Salesforce CLI to PATH
         run: |
