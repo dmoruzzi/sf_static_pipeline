@@ -51,7 +51,16 @@ jobs:
               --repo ${{ github.event.repository.full_name }} \
               --label "wontfix" \
               --assignee ${{ github.event.sender.login }} \
-              --body $`Hi @${{ github.event.sender.login }},\n\nError: The target application file does not exist. Please check if the target application file exists in the ${{ github.event.inputs.target_environment }}.zip file is located on the root of the main branch.\n\nThis issue is likely related to human error and does not indicate a problem with the deployment pipeline.\n\nThanks!`
+              "$(cat <<EOF
+            Hi @${{ github.event.sender.login }},
+
+            Error: The target application file does not exist. Please check if the target application file is located in the ${{ github.event.inputs.target_environment }}.zip file at the root of the main branch.
+
+            This issue is likely related to human error and does not indicate a problem with the deployment pipeline.
+
+            Thanks!
+            EOF
+            )"
 
             1
           fi
