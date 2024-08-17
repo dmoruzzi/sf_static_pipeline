@@ -51,10 +51,6 @@ jobs:
           CLI_URL="https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz"
           curl -L $CLI_URL | tar -xJf - -C $CLI_DIR
 
-          # Debug: List directory contents
-          echo "Directory contents after extraction:"
-          ls -lRa $CLI_DIR
-
           # Check if the 'sf' binary is actually present
           if [ -f "$CLI_DIR/sf/bin/sf" ]; then
             echo "Salesforce CLI installed successfully."
@@ -64,8 +60,8 @@ jobs:
           fi
 
           # Add CLI directory to PATH
-          export PATH="$CLI_DIR/sf/bin:$PATH"
-
+          echo "$CLI_DIR/sf/bin" >> $GITHUB_ENV
+          
           # Verify the CLI installation
           sf --version
         shell: bash
