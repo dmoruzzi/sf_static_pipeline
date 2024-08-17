@@ -1,0 +1,67 @@
+name: Static Resource Deployment Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: 'Target environment for deployment'
+        required: true
+        type: choice
+        options:
+          - 'int'
+          - 'qa'
+          - 'training'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read  # Read access for code checkout
+
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: 'main'
+          path: 'app'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate target app existence
+        id: validate
+        run: |
+          TARGET_FILE="${GITHUB_WORKSPACE}/app/${{ github.event.inputs.target_environment }}.zip"
+          if [ ! -f "$TARGET_FILE" ]; then
+            echo "::error file=$TARGET_FILE::Error: The file does not exist."
+            exit 1
+          else
+            echo "Validation passed: $TARGET_FILE exists."
+          fi
+        shell: bash
+
+      - name: Install Salesforce CLI
+        if: steps.validate.outcome == 'success'
+        run: |
+          echo "Installing Salesforce CLI..."
+
+          # Define directory for Salesforce CLI
+          CLI_DIR="${GITHUB_WORKSPACE}/sf-cli"
+          mkdir -p $CLI_DIR
+
+          # Download and extract Salesforce CLI
+          CLI_URL="https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz"
+          curl -L $CLI_URL | tar -xJf - -C $CLI_DIR
+
+          # Add CLI directory to PATH
+          export PATH="$CLI_DIR:$PATH"
+
+          # Verify the CLI installation
+          $CLI_DIR/sf --version
+        shell: bash
+
+      - name: Use Salesforce CLI
+        if: steps.validate.outcome == 'success'
+        run: |
+          # Use the Salesforce CLI
+          sf --version
+          # Add more commands as needed
+        shell: bash
