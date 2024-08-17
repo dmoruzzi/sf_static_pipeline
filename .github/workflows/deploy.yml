@@ -19,6 +19,11 @@ jobs:
       contents: read
 
     steps:
+      - name: Set Resource Name
+        run: |
+          echo "RESOURCE_NAME=MyStaticResource" >> $GITHUB_ENV
+        shell: bash
+
       - name: Checkout the main branch
         uses: actions/checkout@v4
         with:
@@ -36,8 +41,23 @@ jobs:
           fi
         shell: bash
 
+      - name: Current Month
+        id: current_month
+        run: |
+          echo "CURRENT_MONTH=$(date +'%Y-%m')" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Cache Salesforce CLI
+        id: cache-sf-cli
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/sf-cli
+          key: ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}
+          restore-keys: |
+            ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}
+
       - name: Install Salesforce CLI
-        if: steps.verify_target_file.outcome == 'success'
+        if: steps.cache-sf-cli.outputs.cache-hit != 'true'
         run: |
           echo "Starting installation of Salesforce CLI..."
           
@@ -53,8 +73,11 @@ jobs:
             echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
             exit 1
           fi
+        shell: bash
 
-          echo "$SALESFORCE_CLI_INSTALL_DIR/sf/bin" >> $GITHUB_PATH
+      - name: Add Salesforce CLI to PATH
+        run: |
+          echo "$GITHUB_WORKSPACE/sf-cli/sf/bin" >> $GITHUB_PATH
         shell: bash
 
       - name: Display Salesforce CLI version
@@ -71,7 +94,6 @@ jobs:
           # This approach of using a placeholder project rather than the actual repository
           # saves approximately 3 minutes of execution cost time thereby saving money.
           sf project generate --name salesforce --template empty --output-dir $GITHUB_WORKSPACE
-          ls -laR $GITHUB_WORKSPACE  # temp debug
         shell: bash
 
       - name: Generate the deployment package manifest
@@ -82,7 +104,7 @@ jobs:
           cat <<EOF > $GITHUB_WORKSPACE/salesforce/manifest/package.xml
           <Package xmlns="http://soap.sforce.com/2006/04/metadata">
             <types>
-              <members>MyStaticResource</members>
+              <members>${{ env.RESOURCE_NAME }}</members>
               <name>StaticResource</name>
             </types>
             <version>59.0</version>
@@ -95,8 +117,46 @@ jobs:
           fi
         shell: bash
 
-      - name: Echo the manifest file
+      - name: Make Static Resource Folder Structure
+        id: make_static_resource_folder
         if: steps.generate_manifest_file.outcome == 'success'
         run: |
+          mkdir -p $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources
+
+          if [ ! -d "$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources" ]; then
+            echo "::error directory=$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources::Error: The static resource folder does not exist."
+            exit 1
+          fi
+
+          # temp debug:
           cat $GITHUB_WORKSPACE/salesforce/manifest/package.xml
+        shell: bash
+
+      - name: Extract target application file
+        id: extract_target_file
+        if: steps.make_static_resource_folder.outcome == 'success'
+        run: |
+          tar -xzf ${{ github.event.inputs.target_environment }}.zip -C $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }
+        shell: bash
+
+      - name: Handle custom target application file metadata
+        if: steps.extract_target_file.outcome == 'success'
+        run: |
+          if [ -f "$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }/_METADATA" ]; then
+            mv $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }/_METADATA /tmp/METADATA
+            DESCRIPTION=$(grep -oP '<description>\K.*(?=</description>)' /tmp/METADATA)
+          fi
+
+          if [ -z "$DESCRIPTION" ]; then
+            DESCRIPTION="${{ env.RESOURCE_NAME }} - $(date +'%Y-%m-%d')"
+          fi
+
+          cat <<EOF > $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }.resource-meta.xml
+          <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
+            <cacheControl>Public</cacheControl>
+            <contentType>application/x-zip-compressed</contentType>
+            <description>${ DESCRIPTION }</description>
+          </StaticResource>
+          EOF
+
         shell: bash
