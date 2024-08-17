@@ -56,7 +56,7 @@ jobs:
           ls -lRa $CLI_DIR
 
           # Check if the 'sf' binary is actually present
-          if [ -f "$CLI_DIR/sf/sf" ]; then
+          if [ -f "$CLI_DIR/sf/bin/sf" ]; then
             echo "Salesforce CLI installed successfully."
           else
             echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
@@ -64,7 +64,7 @@ jobs:
           fi
 
           # Add CLI directory to PATH
-          export PATH="$CLI_DIR/sf:$PATH"
+          export PATH="$CLI_DIR/sf/bin:$PATH"
 
           # Verify the CLI installation
           sf --version
@@ -74,5 +74,5 @@ jobs:
         if: steps.validate.outcome == 'success'
         run: |
           # Use the Salesforce CLI
-          sf --version
+          sf version
         shell: bash
