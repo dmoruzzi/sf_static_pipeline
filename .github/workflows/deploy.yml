@@ -132,33 +132,33 @@ jobs:
           EOF
         shell: bash
 
-      - name: Authenticate to Salesforce
-        id: sf_authenticate
-        if: steps.add_sf_to_path.outcome == 'failure'
-        env:
-          AUTH_INT: ${{ secrets.AUTH_INT }}
-          AUTH_QA: ${{ secrets.AUTH_QA }}
-          AUTH_TRAINING: ${{ secrets.AUTH_TRAINING }}
-        run: |
-          target_env="${{ github.event.inputs.target_environment }}"
+      # - name: Authenticate to Salesforce
+      #   id: sf_authenticate
+      #   if: steps.add_sf_to_path.outcome == 'success'
+      #   env:
+      #     AUTH_INT: ${{ secrets.AUTH_INT }}
+      #     AUTH_QA: ${{ secrets.AUTH_QA }}
+      #     AUTH_TRAINING: ${{ secrets.AUTH_TRAINING }}
+      #   run: |
+      #     target_env="${{ github.event.inputs.target_environment }}"
 
-          declare -A auth_secrets=(
-            [int]=$AUTH_INT
-            [qa]=$AUTH_QA
-            [training]=$AUTH_TRAINING
-          )
+      #     declare -A auth_secrets=(
+      #       [int]=$AUTH_INT
+      #       [qa]=$AUTH_QA
+      #       [training]=$AUTH_TRAINING
+      #     )
       
-          if [[ -z "${auth_secrets[$target_env]}" ]]; then
-            echo "::error::Invalid target environment: $target_env"
-            exit 1
-          fi
+      #     if [[ -z "${auth_secrets[$target_env]}" ]]; then
+      #       echo "::error::Invalid target environment: $target_env"
+      #       exit 1
+      #     fi
 
-          echo "${auth_secrets[$target_env]}" | sf org login sfdx-url --sfdx-url-stdin --set-default --alias "$target_env"
-        shell: bash
+      #     echo "${auth_secrets[$target_env]}" | sf org login sfdx-url --sfdx-url-stdin --set-default --alias "$target_env"
+      #   shell: bash
 
       - name: Check Resource Deployability
         id: check_resource_deployability
-        if: steps.sf_authenticate.outcome == 'success'
+        # if: steps.sf_authenticate.outcome == 'success'
         run: |
           cd $GITHUB_WORKSPACE/salesforce
           sf project deploy start --dry-run --source-dir ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }} --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment_check.log || true
