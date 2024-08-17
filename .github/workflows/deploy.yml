@@ -61,9 +61,6 @@ jobs:
 
           # Add CLI directory to PATH
           echo "$CLI_DIR/sf/bin" >> $GITHUB_PATH
-
-          # Verify the CLI installation
-          sf --version
         shell: bash
 
       - name: Use Salesforce CLI
