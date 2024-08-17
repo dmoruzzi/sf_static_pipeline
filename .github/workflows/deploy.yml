@@ -215,7 +215,7 @@ jobs:
             echo "::error::Invalid target environment: $target_env"
 
             gh issue create \
-              --title "Invalid target environment: $target_env" \
+              --title "Invalid target authentication environment" \
               --repo ${{ github.event.repository.full_name }} \
               --label "bug" \
               --assignee ${{ github.event.user.login }} \
