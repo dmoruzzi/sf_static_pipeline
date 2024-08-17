@@ -45,9 +45,19 @@ jobs:
           TARGET_APP_FILE_PATH="${GITHUB_WORKSPACE}/app/${{ github.event.inputs.target_environment }}.zip"
           if [ ! -f "$TARGET_APP_FILE_PATH" ]; then
             echo "::error file=$TARGET_APP_FILE_PATH::Error: The target application file does not exist."
-            exit 1
+
+            gh issue create \
+              --title "Error: The target application file does not exist." \
+              --repo ${{ github.event.repository.full_name }} \
+              --label "wontfix" \
+              --body $`Hi @${{ github.event.sender.login }},\n\nError: The target application file does not exist. Please check if the target application file exists in the ${{ github.event.inputs.target_environment }}.zip file is located on the root of the main branch.\n\nThis issue is likely related to human error and does not indicate a problem with the deployment pipeline.\n\nThanks!`
+              --assignee ${{ github.event.sender.login }}
+
+            1
           fi
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Salesforce CLI
         # GH will purge if no use for 7-days;
@@ -112,9 +122,19 @@ jobs:
 
           if [ ! -d "${{ env.STATIC_RESOURCE_DIR }}" ]; then
             echo "::error directory=${{ env.STATIC_RESOURCE_DIR }}::staticresources::Error: The static resource folder does not exist."
+
+            gh issue create \
+              --title "Error: The static resource folder does not exist." \
+              --repo ${{ github.event.repository.full_name }} \
+              --label "bug" \
+              --assignee ${{ github.event.user.login }}
+              --body $'Hi @${{ github.event.user.login }},\n\nWhen evaluating if the ${{ env.STATIC_RESOURCE_DIR }} directory exists after its creation, the test case failed. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue. It may be related to a new permission security policy for GitHub Actions. For more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\nThanks!'
+            
             exit 1
           fi
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract target application file
         id: extract_target_file
@@ -164,11 +184,21 @@ jobs:
       
           if [[ -z "${auth_secrets[$target_env]}" ]]; then
             echo "::error::Invalid target environment: $target_env"
+
+            gh issue create \
+              --title "Invalid target environment: $target_env" \
+              --repo ${{ github.event.repository.full_name }} \
+              --label "bug" \
+              --assignee ${{ github.event.user.login }}
+              --body $'Hi @${{ github.event.user.login }},\n\nThe target environment $target_env does not exist in the authentication secrets. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue.\n\nFor more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\nThanks!'
+            
             exit 1
           fi
 
           echo "${auth_secrets[$target_env]}" | sf org login sfdx-url --sfdx-url-stdin --set-default --alias "$target_env"
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check Resource Deployability
         id: check_resource_deployability
@@ -186,9 +216,19 @@ jobs:
           if grep -q "Component failure" $GITHUB_WORKSPACE/deployment_check.log; then
             cat $GITHUB_WORKSPACE/deployment_check.log
             echo "::error::Deployment check failed."
+
+            gh issue create \
+              --title "Deployment check failed." \
+              --repo ${{ github.event.repository.full_name }} \
+              --label "wontfix" \
+              --assignee ${{ github.event.user.login }}
+              --body $'Hi @${{ github.event.user.login }},\n\nThe deployment check has failed due to a component failure. The failure was detected in the deployment check log. Please review the log output above for more details. This issue is likely related to a development error and does not indicate a problem with the deployment pipeline; please inspect the deployment check log for more details.  If it is not related to the component itself, please notify the repository maintainer about this issue as then it may indicate a problem with the deployment pipeline.\n\nFor more information, you can view the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\nThanks!'
+            
             exit 1
           fi
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy Static Resource
         id: deploy_resource
