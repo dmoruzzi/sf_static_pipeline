@@ -151,6 +151,8 @@ jobs:
             DESCRIPTION="${ env.RESOURCE_NAME } - $(date +'%Y-%m-%d')"
           fi
 
+          echo "The ${ env.RESOURCE_NAME } resource description is: ${ DESCRIPTION }"
+
           cat <<EOF > $GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources/${ env.RESOURCE_NAME }.resource-meta.xml
           <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
             <cacheControl>Public</cacheControl>
@@ -158,5 +160,10 @@ jobs:
             <description>${ DESCRIPTION }</description>
           </StaticResource>
           EOF
+        shell: bash
 
+      - name: Debug manifest file
+        if: steps.generate_manifest_file.outcome == 'success'
+        run: |
+          cat $GITHUB_WORKSPACE/salesforce/manifest/package.xml
         shell: bash
