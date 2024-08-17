@@ -215,14 +215,14 @@ jobs:
             echo "::error::Invalid target environment: $target_env"
 
             gh issue create \
-              --title "Invalid target authentication environment" \
+              --title "Invalid target authentication environment: $target_env" \
               --repo ${{ github.event.repository.full_name }} \
               --label "bug" \
               --assignee ${{ github.event.user.login }} \
               --body "$(cat <<EOF
           Hi @${{ github.event.user.login }},
 
-          The target environment \${{ target_env }} does not exist in the authentication secrets. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue.
+          The target environment \"$target_env\" does not exist in the authentication secrets. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue.
 
           For more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
 
