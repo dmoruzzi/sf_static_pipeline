@@ -50,8 +50,8 @@ jobs:
               --title "Error: The target application file does not exist." \
               --repo ${{ github.event.repository.full_name }} \
               --label "wontfix" \
+              --assignee ${{ github.event.sender.login }} \
               --body $`Hi @${{ github.event.sender.login }},\n\nError: The target application file does not exist. Please check if the target application file exists in the ${{ github.event.inputs.target_environment }}.zip file is located on the root of the main branch.\n\nThis issue is likely related to human error and does not indicate a problem with the deployment pipeline.\n\nThanks!`
-              --assignee ${{ github.event.sender.login }}
 
             1
           fi
@@ -190,7 +190,7 @@ jobs:
               --title "Invalid target environment: $target_env" \
               --repo ${{ github.event.repository.full_name }} \
               --label "bug" \
-              --assignee ${{ github.event.user.login }}
+              --assignee ${{ github.event.user.login }} \
               --body $'Hi @${{ github.event.user.login }},\n\nThe target environment $target_env does not exist in the authentication secrets. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue.\n\nFor more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\nThanks!'
             
             exit 1
@@ -220,7 +220,7 @@ jobs:
               --title "Deployment check failed." \
               --repo ${{ github.event.repository.full_name }} \
               --label "wontfix" \
-              --assignee ${{ github.event.user.login }}
+              --assignee ${{ github.event.user.login }} \
               --body $'Hi @${{ github.event.user.login }},\n\nThe deployment check has failed due to a component failure. The failure was detected in the deployment check log. Please review the log output above for more details. This issue is likely related to a development error and does not indicate a problem with the deployment pipeline; please inspect the deployment check log for more details.  If it is not related to the component itself, please notify the repository maintainer about this issue as then it may indicate a problem with the deployment pipeline.\n\nFor more information, you can view the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\nThanks!'
             
             exit 1
