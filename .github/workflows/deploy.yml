@@ -171,17 +171,19 @@ jobs:
           unzip $GITHUB_WORKSPACE/app/${{ github.event.inputs.target_environment }}.zip -d ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}
         shell: bash
 
-      - name: Static Resource Description & Metadata
+      - name: Parse Metadata Information
         if: steps.extract_target_file.outcome == 'success'
         run: |
-          if [ -f "${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}/_METADATA" ]; then
-            mv ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}/_METADATA /tmp/METADATA
-            DESCRIPTION=$(grep -oP '<description>\K.*(?=</description>)' /tmp/METADATA)
+          if [ -f "${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}/_METADATA.INI" ]; then
+            mv ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}/_METADATA.INI /tmp/_METADATA.INI
+            VERSION=$(cat /tmp/_METADATA.INI | grep -i "VERSION" | cut -d'=' -f2)
           fi
 
-          if [ -z "$DESCRIPTION" ]; then
-            DESCRIPTION="${{ env.RESOURCE_NAME }} - $(date +'%Y-%m-%d') - ${{ github.run_id }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="0.0.0 (UNDEFINED)"
           fi
+
+          DESCRIPTION="v$VERSION - ${{ github.event.sender.login }} - $(date '+%Y-%m-%d %H:%M:%S')"
 
           echo "The ${{ env.RESOURCE_NAME }} resource description is: $DESCRIPTION"
 
@@ -290,5 +292,7 @@ jobs:
         if: steps.deploy_resource.outcome == 'success'
         with:
           name: deployment_log
-          path: deployment.log
+          path: |
+            deployment.log
+            deployment_check.log
           retention-days: 7
