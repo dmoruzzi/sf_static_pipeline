@@ -248,6 +248,14 @@ jobs:
           sf project deploy start --dry-run --source-dir ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }} --target-org ${{ github.event.inputs.target_environment }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment_check.log || true
         shell: bash
 
+      - name: Check Resource Deployability for Training into UAT
+        if: github.event.inputs.target_environment == 'int'
+        run: |
+          cd $GITHUB_WORKSPACE/salesforce
+          echo "${{ secrets.AUTH_UAT }}" | sf org login sfdx-url --sfdx-url-stdin --alias "UAT"
+          sf project deploy start --dry-run --source-dir ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }} --target-org UAT --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee -a $GITHUB_WORKSPACE/deployment_check.log || true
+
+
       - name: Display Deployment Check Log
         id: display_deployment_check_log
         if: steps.check_resource_deployability.outcome == 'success'
