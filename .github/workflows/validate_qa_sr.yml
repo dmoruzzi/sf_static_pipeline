@@ -46,6 +46,7 @@ jobs:
             echo "No changes for ${{ env.TARGET_ENVIRONMENT }} detected. Exiting..."
             gh run cancel ${{ github.run_id }}
             sleep 60
+            exit 3
           fi
         shell: bash
         env:

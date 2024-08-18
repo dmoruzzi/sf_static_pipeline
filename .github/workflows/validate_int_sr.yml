@@ -330,7 +330,7 @@ jobs:
       - name: Checkout the branch
         uses: actions/checkout@v4
         with:
-          ref: 'deploy'
+          ref: 'main'
           path: 'app'
           fetch-depth: 2  # Needed to retrieve git diff
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -343,7 +343,9 @@ jobs:
           if ! git diff --name-only origin/deploy~1 origin/deploy | grep -Fxq "${{ env.TARGET_ENVIRONMENT }}.zip"; then
             echo "::notice::No changes for ${{ env.TARGET_ENVIRONMENT }} detected. Exiting..."
             echo "No changes for ${{ env.TARGET_ENVIRONMENT }} detected. Exiting..."
-            exit 0
+            gh run cancel ${{ github.run_id }}
+            sleep 60
+            exit 3
           fi
   
       - name: Verify existence of target application file
