@@ -19,6 +19,8 @@ jobs:
       contents: read
       issues: write
 
+    environment: "${{ github.event.inputs.target_environment }}"
+
     steps:
       - name: Prepare job variables & structure
         run: |
