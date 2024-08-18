@@ -31,7 +31,7 @@ jobs:
       - name: Checkout the branch
         uses: actions/checkout@v4
         with:
-          ref: 'deploy'
+          ref: 'main'
           path: 'app'
           fetch-depth: 2  # Needed to retrieve git diff
           token: ${{ secrets.GITHUB_TOKEN }}
