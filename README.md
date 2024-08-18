@@ -10,7 +10,7 @@ main | `int.zip` | INT | INT | none
 main | `qa.zip` | QA | QA | none
 main | `training.zip` | Training | Training & UAT | devops
 
-1. **Commit**: Commit static resource ZIP content to `origin/main` branch:
+1. **Commit**: Commit static resource ZIP content to `origin/main` branch.
 2. **Trigger**: Manual trigger through `workflow_dispatch` with a required input for the target environment (`int`, `qa`, or `training`).
 3. **Approval**: If applicable, wait for approval for the requested deployment.
 4. **Validate**: Validate the correct content deployed to the targeted sandbox.
