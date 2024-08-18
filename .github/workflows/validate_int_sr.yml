@@ -1,0 +1,292 @@
+name: Validate INT Static Resource Deployment
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  validate_int:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Prepare job variables & structure
+        run: |
+          echo "Setting job variables..."
+          echo "TARGET_ENVIRONMENT=int" >> $GITHUB_ENV
+          echo "RESOURCE_NAME=MyStaticResource" >> $GITHUB_ENV
+          echo "SALESFORCE_CLI_DOWNLOAD_URL=https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz" >> $GITHUB_ENV
+          echo "CURRENT_MONTH=$(date +'%Y-%m')" >> $GITHUB_ENV
+          echo "STATIC_RESOURCE_DIR=$GITHUB_WORKSPACE/salesforce/force-app/main/default/staticresources" >> $GITHUB_ENV
+
+          echo "Creating directories..."
+          mkdir -p $GITHUB_WORKSPACE/sf-cli
+        shell: bash
+
+      - name: Checkout the main branch
+        uses: actions/checkout@v4
+        with:
+          ref: 'deploy'
+          path: 'app'
+          fetch-depth: 2  # Needed to retrieve git diff
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get list of changed files
+        id: changed_files
+        run: |
+          git fetch origin
+          if ! git diff --name-only origin/deploy~1 origin/deploy | grep -Fxq "${{ env.TARGET_ENVIRONMENT }}.zip"; then
+            echo "::notice::No changes for ${{ env.TARGET_ENVIRONMENT }} detected. Exiting..."
+            echo "No changes for ${{ env.TARGET_ENVIRONMENT }} detected. Exiting..."
+            exit 0
+          fi
+  
+      - name: Verify existence of target application file
+        id: verify_target_file
+        run: |
+          TARGET_APP_FILE_PATH="${GITHUB_WORKSPACE}/app/${{ env.TARGET_ENVIRONMENT }}.zip"
+          if [ ! -f "$TARGET_APP_FILE_PATH" ]; then
+            echo "::error file=$TARGET_APP_FILE_PATH::Error: The target application file does not exist."
+
+            gh issue create \
+            --title "Error: The target application file does not exist." \
+            --repo ${{ github.event.repository.full_name }} \
+            --label "wontfix" \
+            --assignee ${{ github.event.sender.login }} \
+            --body "$(cat <<EOF
+          Hi @${{ github.event.sender.login }},
+
+          Error: The target application file does not exist. Please check if the target application file is located in the ${{ env.TARGET_ENVIRONMENT }}.zip file at the root of the main branch.
+
+          This issue is likely related to human error and does not indicate a problem with the deployment pipeline.
+
+          Thanks!
+          EOF
+            )"
+
+            1
+          fi
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Salesforce CLI
+        # GH will purge if no use for 7-days;
+        # if high-usage, key will be rotate monthly
+        # this ensures that the CLI is up-to-date enough
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/sf-cli
+          key: ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}
+          restore-keys: |
+            ${{ runner.os }}-sf-cli-${{ env.CURRENT_MONTH }}
+
+      - name: Install Salesforce CLI
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: curl -L $SALESFORCE_CLI_DOWNLOAD_URL | tar -xJf - -C $GITHUB_WORKSPACE/sf-cli
+
+      - name: Add Salesforce CLI to PATH
+        id: add_sf_to_path
+        run: |
+          if [ -f "${GITHUB_WORKSPACE}/sf-cli/sf/bin/sf" ]; then
+            echo "Salesforce CLI installed successfully in ${GITHUB_WORKSPACE}/sf-cli."
+          else
+            echo "::error::Salesforce CLI installation failed or directory structure is incorrect."
+            
+            gh issue create \
+              --title "Salesforce CLI installation failed or directory structure is incorrect." \
+              --repo ${{ github.event.repository.full_name }} \
+              --label "bug" \
+              --assignee "${{ github.event.sender.login }}" \
+              --body "$(cat <<EOF
+          Hi @${{ github.event.sender.login }},
+
+          We encountered an issue with the Salesforce CLI installation or its directory structure.
+
+          The failure occurred when evaluating: $GITHUB_WORKSPACE/sf-cli/sf/bin/sf. It seems the forcedotcom/salesforce-cli repository has changed its structure, which means the current setup is no longer valid.
+
+          Please notify the repository maintainer about this issue, as re-running the job will not resolve it. For more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+          Thanks!
+          EOF
+              )"
+            
+            exit 1
+          fi
+
+          echo "$GITHUB_WORKSPACE/sf-cli/sf/bin" >> $GITHUB_PATH
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display Salesforce CLI version
+        if: steps.verify_target_file.outcome == 'success'
+        run: |
+          sf version
+        shell: bash
+
+      - name: Generate placeholder Salesforce project
+        # This is needed as you may only execute project deployments from within a SF directory.
+        # This approach of using a placeholder project rather than the actual repository
+        # saves approximately 3 minutes of execution cost time thereby saving money.
+        id: generate_sf_project
+        if: steps.verify_target_file.outcome == 'success'
+        run: |
+          sf project generate --name salesforce --template empty --output-dir $GITHUB_WORKSPACE
+        shell: bash
+
+      - name: Make Static Resource Folder Structure
+        id: make_static_resource_folder
+        if: steps.generate_sf_project.outcome == 'success'
+        run: |
+          mkdir -p ${{ env.STATIC_RESOURCE_DIR }}
+
+          if [ ! -d "${{ env.STATIC_RESOURCE_DIR }}" ]; then
+            echo "::error directory=${{ env.STATIC_RESOURCE_DIR }}::staticresources::Error: The static resource folder does not exist."
+
+            gh issue create \
+              --title "Error: The static resource folder does not exist." \
+              --repo ${{ github.event.repository.full_name }} \
+              --label "bug" \
+              --assignee ${{ github.event.user.login }}
+              --body "$(cat <<EOF
+          Hi @${{ github.event.user.login }},
+          
+          When evaluating if the ${{ env.STATIC_RESOURCE_DIR }} directory exists after its creation, the test case failed. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue. It may be related to a new permission security policy for GitHub Actions.
+          
+          For more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+          
+          Thanks!
+          EOF
+              )"
+            exit 1
+          fi
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract target application file
+        id: extract_target_file
+        if: steps.make_static_resource_folder.outcome == 'success'
+        run: |
+          unzip $GITHUB_WORKSPACE/app/${{ env.TARGET_ENVIRONMENT }}.zip -d ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}
+        shell: bash
+
+      - name: Parse Metadata Information
+        if: steps.extract_target_file.outcome == 'success'
+        run: |
+          if [ -f "${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}/_METADATA.INI" ]; then
+            mv ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}/_METADATA.INI /tmp/_METADATA.INI
+            VERSION=$(cat /tmp/_METADATA.INI | grep -i "VERSION" | cut -d'=' -f2)
+          fi
+
+          if [ -z "$VERSION" ]; then
+            VERSION="0.0.0 (UNDEFINED)"
+          fi
+
+          DESCRIPTION="v$VERSION - ${{ github.event.sender.login }} - $(date '+%Y-%m-%d %H:%M:%S')"
+
+          echo "The ${{ env.RESOURCE_NAME }} resource description is: $DESCRIPTION"
+
+          cat <<EOF > ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }}.resource-meta.xml
+          <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
+            <cacheControl>Public</cacheControl>
+            <contentType>application/x-zip-compressed</contentType>
+            <description>$DESCRIPTION</description>
+          </StaticResource>
+          EOF
+        shell: bash
+
+      - name: Authenticate to Salesforce
+        id: sf_authenticate
+        if: steps.add_sf_to_path.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTH_INT: ${{ secrets.AUTH_INT }}
+          AUTH_QA: ${{ secrets.AUTH_QA }}
+          AUTH_TRAINING: ${{ secrets.AUTH_TRAINING }}
+        run: |
+          target_env="${{ env.TARGET_ENVIRONMENT }}"
+
+          declare -A auth_secrets=(
+            [int]=$AUTH_INT
+            [qa]=$AUTH_QA
+            [training]=$AUTH_TRAINING
+          )
+      
+          if [[ -z "${auth_secrets[$target_env]}" ]]; then
+            echo "::error::Invalid target environment: $target_env"
+
+            gh issue create \
+              --title "Invalid target authentication environment: $target_env" \
+              --repo ${{ github.event.repository.full_name }} \
+              --label "bug" \
+              --assignee ${{ github.event.user.login }} \
+              --body "$(cat <<EOF
+          Hi @${{ github.event.user.login }},
+
+          The target environment \"$target_env\" does not exist in the authentication secrets. This indicates a possible issue with the deployment pipeline. Please notify the repository maintainer about this issue.
+
+          For more details, you can check the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+          Thanks!
+          EOF
+              )"
+            
+            exit 1
+          fi
+
+          echo "${auth_secrets[$target_env]}" | sf org login sfdx-url --sfdx-url-stdin --set-default --alias "$target_env"
+        shell: bash
+
+      - name: Check Resource Deployability
+        id: check_resource_deployability
+        if: steps.sf_authenticate.outcome == 'success'
+        run: |
+          cd $GITHUB_WORKSPACE/salesforce
+          sf project deploy start --dry-run --source-dir ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }} --target-org ${{ env.TARGET_ENVIRONMENT }} --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee $GITHUB_WORKSPACE/deployment_check.log || true
+        shell: bash
+
+      - name: Check Resource Deployability for Training into UAT
+        if: github.event.inputs.target_environment == 'training'
+        run: |
+          cd $GITHUB_WORKSPACE/salesforce
+          echo "${{ secrets.AUTH_UAT }}" | sf org login sfdx-url --alias "UAT" --sfdx-url-stdin
+          sf project deploy start --dry-run --source-dir ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }} --target-org UAT --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee -a $GITHUB_WORKSPACE/deployment_check.log || true
+
+
+      - name: Display Deployment Check Log
+        id: display_deployment_check_log
+        if: steps.check_resource_deployability.outcome == 'success'
+        run: |
+          # if component failure in log, then print the log and exit
+          if grep -q "Component failure" $GITHUB_WORKSPACE/deployment_check.log; then
+            cat $GITHUB_WORKSPACE/deployment_check.log
+            echo "::error::Deployment check failed."
+
+            gh issue create \
+              --title "Deployment check failed." \
+              --repo ${{ github.event.repository.full_name }} \
+              --label "wontfix" \
+              --assignee ${{ github.event.user.login }} \
+              --body "$(cat <<EOF
+          Hi @${{ github.event.user.login }},
+          
+          The deployment check has failed due to a component failure. This failure was detected in the deployment check log. Please review the log output above for more details.
+          
+          This issue is likely related to a development error and does not indicate a problem with the deployment pipeline. However, if you find that it is not related to the component itself, please notify the repository maintainer, as it may then indicate a problem with the deployment pipeline.
+          
+          For more information, you can view the workflow run here: [Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+          
+          Thanks!
+          EOF
+              )"            
+            exit 1
+          fi
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
