@@ -1,4 +1,4 @@
-name: Validate INT Static Resource Deployment  # Ensure correct environment
+name: Validate Training Static Resource Deployment  # Ensure correct environment
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   validate:
-    name: Validate INT  # Ensure correct environment
+    name: Validate Training
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,7 +18,7 @@ jobs:
       - name: Prepare job variables & structure
         run: |
           echo "Setting job variables..."
-          echo "TARGET_ENVIRONMENT=int" >> $GITHUB_ENV && echo "# Ensure correct environment" >> /dev/null
+          echo "TARGET_ENVIRONMENT=training" >> $GITHUB_ENV
           echo "RESOURCE_NAME=MyStaticResource" >> $GITHUB_ENV
           echo "SALESFORCE_CLI_DOWNLOAD_URL=https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz" >> $GITHUB_ENV
           echo "CURRENT_MONTH=$(date +'%Y-%m')" >> $GITHUB_ENV
@@ -297,16 +297,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
-    name: Deploy INT  # Ensure correct environment
+    name: Deploy Training  # Ensure correct environment
     needs: validate
     runs-on: ubuntu-latest
     if: needs.validate.result == 'success'
 
-    environment: "int"   # Ensure correct environment
+    environment: "training"   # Ensure correct environment
     # To produce the below, the following should be done:
     # 1. Remove the UAT deployment check for training
     # 2. Remove "--dry-run" from the sf project deploy start command
     # 3. Relabel "Validate" to "Deploy"
+    # 4. Change labels to the appropriate environment
     #
     # In the future, this needs to be moved to Composite Actions to
     # adhere to the DRY Principle... but for now, this is good enough.
@@ -316,7 +317,7 @@ jobs:
       - name: Prepare job variables & structure
         run: |
           echo "Setting job variables..."
-          echo "TARGET_ENVIRONMENT=int" >> $GITHUB_ENV  && echo "# Ensure correct environment" >> /dev/null
+          echo "TARGET_ENVIRONMENT=training" >> $GITHUB_ENV  @  
           echo "RESOURCE_NAME=MyStaticResource" >> $GITHUB_ENV
           echo "SALESFORCE_CLI_DOWNLOAD_URL=https://developer.salesforce.com/media/salesforce-cli/sf/channels/stable/sf-linux-x64.tar.xz" >> $GITHUB_ENV
           echo "CURRENT_MONTH=$(date +'%Y-%m')" >> $GITHUB_ENV
