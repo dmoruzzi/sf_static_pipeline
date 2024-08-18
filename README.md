@@ -22,7 +22,7 @@ Usage | Validate the correct sandbox selection for the target sandbox | Static R
 Usage | Validate the successful deployment of static resources | Static Resource Team | Per Usage
 Usage | Initial failure triage and notification of deployment issues | Static Resource Team | Per Issue
 Sustainment | Passphrase rotation of Salesforce CLI authentication tokens + GitHub Secrets configuration | DevOps | Yearly
-Sustainment | Passphrase rotation of Service Integration GitHub authentication tokens + GitHub Secrets configuration | DevOps | Yearly
+Sustainment | Passphrase rotation of Service Integration GitHub authentication tokens + GitHub Secrets configuration on Static Resource Team GitHub repository | DevOps | Yearly
 Innovation | Adding support to new salesforce sandboxes to meet new quality acceptance sandboxes requirements | DevOps | Project Allocation
 Innovation | Integrating deployment pipeline with requested features | DevOps | Project Allocation
 Innovation | Resolving deployment pipeline issues | DevOps | _Reasonable Effort_ and/or Project Allocation
@@ -61,21 +61,16 @@ In the event the static resource pipeline is unavailable, please contact the Dev
 
 ### Requirements
 
-- GitHub Secrets for Salesforce authentication (`AUTH_INT`, `AUTH_QA`, `AUTH_TRAINING`)
+Environment | Secret Name | Description
+--- | --- | ---
+int | `AUTH_INT` | Salesforce sfdxAuthUrl; restrict secret to deployment environment & restrict access to `origin/main` branch only
+qa | `AUTH_QA` | Salesforce sfdxAuthUrl; restrict secret to deployment environment & restrict access to `origin/main` branch only
+training | `AUTH_TRAINING` | Salesforce sfdxAuthUrl; restrict secret to deployment environment & restrict access to `origin/main` branch only
+training | `AUTH_UAT` | Salesforce sfdxAuthUrl; restrict secret to deployment environment & restrict access to `origin/main` branch only -- used strictly to validate (not deploy) UAT environment for training deployments
 
 ### Troubleshooting
 
 Issues are logged as GitHub issues with appropriate labels and descriptions. Please refer to the workflow run for more details.
-
-## Future Discussions
-
-The below are some of the areas that were brought up during the development design process:
-
-- Centralize deployment frequency metrics for time/cost savings calculations to accurately priorize pipeline innovation time compared to other areas of innovation.
-- Offload GitHub event senders access control to Active Directory groups synced with GitHub Teams.
-- Automate Azure DevOps (ADO) comments on pre-defined work items per metadata information.
-- Automate Jira issue transitions to move work items to an appropriate state per metadata information.
-- Deployment pipeline of static resources to children development sandboxes.
 
 ## Points of Contact
 
@@ -85,6 +80,17 @@ dmoruzzi | David Moruzzi | Deployment pipeline maintainer | DevOps
 scarrion | Scott Carrion | Service Integration owner | DevOps
 pharrington | Patrick Harrington | Lead requirements engineer | Static Resource Team
 gkelly | Gabriel Kelly | Integration pipeline maintainer | Static Resource Team
+
+## Future Discussions
+
+The below are some of the areas that were brought up during the development design process:
+
+- Onboard an additional service integration account for GitHub accounts to better manage access; grant SI_2 access to write to `develop` and then grant SI_1 access to: Actions=Read/Write,  Contents=Read/Write,Variables=Read/Write and then have a separate GitHub Workflow tracking pushes to the `deploy` branch; if push contains `int.zip`, `qa.zip`, or `training.zip` then write to the `main` branch and then trigger the deployment pipeline. 
+- Centralize deployment frequency metrics for time/cost savings calculations to accurately priorize pipeline innovation time compared to other areas of innovation.
+- Offload GitHub event senders access control to Active Directory groups synced with GitHub Teams.
+- Automate Azure DevOps (ADO) comments on pre-defined work items per metadata information.
+- Automate Jira issue transitions to move work items to an appropriate state per metadata information.
+- Deployment pipeline of static resources to children development sandboxes.
 
 
 ____
