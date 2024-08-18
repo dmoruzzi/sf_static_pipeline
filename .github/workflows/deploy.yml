@@ -252,7 +252,7 @@ jobs:
         if: github.event.inputs.target_environment == 'int'
         run: |
           cd $GITHUB_WORKSPACE/salesforce
-          echo "${{ secrets.AUTH_UAT }}" | sf org login sfdx-url --sfdx-url-stdin --alias "UAT"
+          echo "${{ secrets.AUTH_UAT }}" | sf org login sfdx-url --alias "UAT" --sfdx-url-stdin
           sf project deploy start --dry-run --source-dir ${{ env.STATIC_RESOURCE_DIR }}/${{ env.RESOURCE_NAME }} --target-org UAT --verbose 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee -a $GITHUB_WORKSPACE/deployment_check.log || true
 
 
