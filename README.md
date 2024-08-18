@@ -2,6 +2,19 @@
 
 Deploy static resources to Salesforce sandboxes.
 
+## Usage
+
+Branch | File | Deployment Sandbox(es) | Validation Sandbox(es) | Approver(s)
+--- | --- | --- | --- | ---
+main | `int.zip` | INT | INT | none
+main | `qa.zip` | QA | QA | none
+main | `training.zip` | Training | Training & UAT | devops
+
+1. **Commit**: Commit static resource ZIP content to `origin/main` branch:
+2. **Trigger**: Manual trigger through `workflow_dispatch` with a required input for the target environment (`int`, `qa`, or `training`).
+3. **Approval**: If applicable, wait for approval for the requested deployment.
+4. **Validate**: Validate the correct content deployed to the targeted sandbox.
+
 ## Metadata Information
 
 During deployment, the workflow checks for a _METADATA.INI file to extract the version number. If the file is missing or lacks a version, it defaults to "0.0.0 (UNDEFINED)". The description for the Salesforce resource is then created in the format: `v$VERSION - {{ github.event.sender.login }} - $(date '+%Y-%m-%d %H:%M:%S')`. For example, it might generate `v0.0.1 - dmoruzzi - 2023-12-31 13:12:11`.
