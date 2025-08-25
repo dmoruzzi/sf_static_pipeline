@@ -29,7 +29,7 @@ jobs:
         shell: bash
 
       - name: Checkout the branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: 'main'
           path: 'app'
@@ -330,7 +330,7 @@ jobs:
         shell: bash
 
       - name: Checkout the branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: 'deploy'
           path: 'app'
